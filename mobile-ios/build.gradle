@@ -1,0 +1,108 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+buildscript {
+    repositories {
+        mavenLocal()
+        // Put your own repository details here
+        maven {
+            url 'http://myRepo'
+            credentials {
+                // these are read from the gradle.properties file. It has entries like mavenUsername=fooBar
+                username = mavenUsername
+                password = mavenPassword
+            }
+        }
+    }
+
+    dependencies {
+        classpath group: 'org.gradlefx', name: 'gradlefx', version: '1.1'
+    }
+}
+
+apply plugin: 'gradlefx'
+apply plugin: 'ideafx'
+
+type = 'mobile'
+version = '1.0.0'
+mainClass = 'Main.as'
+frameworkLinkage = 'none'
+playerVersion = '15.0'
+
+def additionalCompilerArguments = [
+        '-swf-version=26',
+        '-debug=true',
+        '-inline',
+        '-keep-as3-metadata+=Inline,Inject,Embed,ChangeEvent,Managed,NonCommittingChangeEvent,PostConstruct,PreDestroy,Transient']
+
+repositories {
+    mavenLocal()
+    maven {
+        // Put your own repository details here
+        url 'http://myRepo'
+        credentials {
+            username = mavenUsername
+            password = mavenPassword
+        }
+    }
+    ivy {
+        name 'Adobe Air SDK'
+        artifactPattern Os.isFamily(Os.FAMILY_WINDOWS) ?
+                'http://airdownload.adobe.com/air/win/download/[revision]/[module]_Compiler.[ext]' :
+                'http://airdownload.adobe.com/air/mac/download/[revision]/[module]_Compiler.[ext]'
+    }
+}
+
+dependencies {
+    airSDK group: 'com.adobe', name: 'AIRSDK', version: '15.0', ext: Os.isFamily(Os.FAMILY_WINDOWS) ? 'zip' : 'tbz2'
+
+    merged group: 'com.sticksports', name: 'flurry', version: '0.5.0', ext: 'ane'
+
+    merged group: 'com.gamua', name: 'starling-framework', version: '1.5.1', ext: 'swc'
+
+    test group: 'org.flexunit', name: 'flexunit-tasks', version: '4.2.0', ext: 'jar'
+    test group: 'org.flexunit', name: 'flexunit-as3', version: '4.2.0', ext: 'swc'
+    test group: 'org.flexunit', name: 'flexunit-aircilistener', version: '4.2.0', ext: 'swc'
+    test group: 'org.flexunit', name: 'flexunit-cilistener', version: '4.2.0', ext: 'swc'
+    test group: 'org.flexunit', name: 'flexunit-uilistener', version: '4.2.0', ext: 'swc'
+}
+
+additionalCompilerOptions = additionalCompilerArguments
+
+sdkAutoInstall {
+    showPrompts = false
+}
+
+airMobile {
+    platform = 'ios'
+    target = 'ipa-debug-interpreter'
+    outputExtension = 'ipa'
+    provisioningProfile = 'certificates/development/development.mobileprovision'
+}
+
+air {
+    keystore = 'certificates/development/ios_development.p12'
+    storepass = 'my certificate password'
+    applicationDescriptor = 'src/main/resources/application-descriptor.xml'
+    fileOptions = [
+        '-C','media/icons',
+        '.',
+        '-C','media/splashscreen',
+        '.'
+    ]
+}
+
+flexUnit {
+    additionalCompilerOptions = additionalCompilerArguments
+    // This is defined in the gradle.properties file, for example flashPlayerLocation=/programs/flashplayer.exe
+    command = flashPlayerLocation
+    template = buildDir.toString() + "/reports/FlexUnitRunnerTemplate.as"
+}
+
+///////////////////////////////////////// wrapper
+task wrapper(type: Wrapper) {
+    group = 'Buildmaster'
+    description = 'Generates gradlew and gradlew.bat bootstrap scripts.'
+    gradleVersion = '2.1'
+    // place jar file and properties into a subdirectory to avoid root dir clutter
+    jarFile = 'gradle/wrapper/gradle.jar'
+}
