@@ -25,7 +25,6 @@ apply plugin: 'ideafx'
 type = 'mobile'
 version = '1.0.0'
 mainClass = 'Main.as'
-frameworkLinkage = 'none'
 playerVersion = '15.0'
 
 def additionalCompilerArguments = [
